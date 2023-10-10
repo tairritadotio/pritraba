@@ -1,0 +1,202 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Periodo que mais trabalha</title>
+    <script>
+        var registrosTrabalho = {
+            manha: [],
+            tarde: [],
+            noite: [],
+            madrugada: []
+        };
+
+        var nome = '';
+        var id = '';
+
+        function calcularHorasTrabalhadas() {
+            
+            var dataEntrada = document.getElementById('dataEntrada').value;
+            var dataSaida = document.getElementById('dataSaida').value;
+            var horaEntrada = document.getElementById('horaEntrada').value;
+            var horaSaida = document.getElementById('horaSaida').value;
+
+            
+            var periodoDia = document.querySelector('input[name="periodoDia"]:checked').value;
+
+            
+            nome = document.getElementById('nome').value;
+            id = document.getElementById('id').value;
+
+            
+            var entrada = new Date(`${dataEntrada}T${horaEntrada}`);
+            var saida = new Date(`${dataSaida}T${horaSaida}`);
+
+            
+            var diferencaHoras = (saida - entrada) / (1000 * 60 * 60);
+
+            registrosTrabalho[periodoDia].push({
+                nome: nome,
+                id: id,
+                dataEntrada: dataEntrada,
+                dataSaida: dataSaida,
+                horaEntrada: horaEntrada,
+                horaSaida: horaSaida,
+                diferencaHoras: diferencaHoras
+            });
+
+           
+            document.getElementById('dataEntrada').value = '';
+            document.getElementById('dataSaida').value = '';
+            document.getElementById('horaEntrada').value = '';
+            document.getElementById('horaSaida').value = '';
+            document.getElementById('nome').value = '';
+            document.getElementById('id').value = '';
+
+            
+            atualizarExibicaoRegistros();
+        }
+
+        function atualizarExibicaoRegistros() {
+            var resultado = '';
+
+            resultado += '<h2>Informações Pessoais:</h2>';
+            resultado += `<p>ID: ${id}</p>`;
+            resultado += `<p>Nome: ${nome}</p>`;
+
+            resultado += '<h2>Resumo:</h2>';
+
+            for (var periodo in registrosTrabalho) {
+                resultado += `<p>Período ${periodo.charAt(0).toUpperCase() + periodo.slice(1)}: ${registrosTrabalho[periodo].length}`;
+                resultado += ` (${obterFluxoPacientes(periodo)})</p>`;
+            }
+
+            resultado += '<h2>Registros de Trabalho:</h2>';
+
+            for (var periodo in registrosTrabalho) {
+                if (registrosTrabalho[periodo].length > 0) {
+                    resultado += `<h3>${periodo.charAt(0).toUpperCase() + periodo.slice(1)}</h3>`;
+                    resultado += `<ul>`;
+
+                    for (var i = 0; i < registrosTrabalho[periodo].length; i++) {
+                        var registro = registrosTrabalho[periodo][i];
+                        resultado += `<li>`;
+                        resultado += `ID: ${registro.id}<br>`;
+                        resultado += `Nome: ${registro.nome}<br>`;
+                        resultado += `Data de Entrada: ${registro.dataEntrada}<br>`;
+                        resultado += `Data de Saída: ${registro.dataSaida}<br>`;
+                        resultado += `Hora de Entrada: ${registro.horaEntrada}<br>`;
+                        resultado += `Hora de Saída: ${registro.horaSaida}<br>`;
+                        resultado += `Período: ${periodo.charAt(0).toUpperCase() + periodo.slice(1)}<br>`;
+                        resultado += `Quantidade de Horas Trabalhadas: ${registro.diferencaHoras.toFixed(2)} horas<br>`;
+                        resultado += `Fluxo de Pacientes: ${obterFluxoPacientes(periodo)}<br>`;
+                        resultado += `</li>`;
+                    }
+
+                    resultado += `</ul>`;
+                }
+            }
+
+            
+            document.getElementById('registrosTrabalho').innerHTML = resultado;
+        }
+
+        function obterFluxoPacientes(periodo) {
+            switch (periodo) {
+                case 'manha':
+                    return 'Pouco fluxo de pacientes';
+                case 'tarde':
+                    return 'Fluxo razoável de pacientes';
+                case 'noite':
+                case 'madrugada':
+                    return 'Muito fluxo de pacientes';
+                default:
+                    return '';
+            }
+        }
+
+        function salvarRegistros() {
+            
+            var registrosJSON = JSON.stringify({
+                nome: nome,
+                id: id,
+                registrosTrabalho: registrosTrabalho
+            });
+
+            
+            var blob = new Blob([registrosJSON], { type: 'application/json' });
+
+            
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${id}_${nome}_registrosTrabalho.json`;
+
+            
+            a.click();
+        }
+
+        function carregarRegistros(input) {
+            var file = input.files[0];
+
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var conteudoArquivo = e.target.result;
+
+                    try {
+                        
+                        var registrosCarregados = JSON.parse(conteudoArquivo);
+
+                        
+                        if (registrosCarregados && typeof registrosCarregados === 'object') {
+                            registrosTrabalho = registrosCarregados.registrosTrabalho;
+                            nome = registrosCarregados.nome;
+                            id = registrosCarregados.id;
+
+                            
+                            atualizarExibicaoRegistros();
+                        } else {
+                            alert('O arquivo selecionado não contém registros válidos.');
+                        }
+                    } catch (error) {
+                        alert('Ocorreu um erro ao carregar o arquivo.');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Periodo que mais trabalha</h1>
+    <label for="nome">Nome: </label>
+    <input type="text" id="nome">
+    <br>
+    <label for="id">ID: </label>
+    <input type="text" id="id">
+    <br>
+    <label for="dataEntrada">Data de Entrada: </label>
+    <input type="date" id="dataEntrada">
+    <br>
+    <label for="dataSaida">Data de Saída: </label>
+    <input type="date" id="dataSaida">
+    <br>
+    <label for="horaEntrada">Hora de Entrada: </label>
+    <input type="time" id="horaEntrada">
+    <br>
+    <label for="horaSaida">Hora de Saída: </label>
+    <input type="time" id="horaSaida">
+    <br>
+    <label>Período do Dia: </label>
+    <input type="radio" name="periodoDia" value="manha" id="manha"> Manhã
+    <input type="radio" name="periodoDia" value="tarde" id="tarde"> Tarde
+    <input type="radio" name="periodoDia" value="noite" id="noite"> Noite
+    <input type="radio" name="periodoDia" value="madrugada" id="madrugada"> Madrugada
+    <br>
+    <button onclick="calcularHorasTrabalhadas()">Adicionar Registro de Trabalho</button>
+    <button onclick="salvarRegistros()">Salvar Registros</button>
+    <input type="file" id="fileInput" onchange="carregarRegistros(this)">
+    <div id="registrosTrabalho"></div>
+</body>
+</html>
